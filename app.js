@@ -1,6 +1,9 @@
 const express = require('express');
 const app = express();
+const fs = require('fs');
 const PORT = process.env.PORT || 3000;
+
+let history = [];
 
 function calculateExpression(expression) {
     const precedence = {
@@ -61,7 +64,10 @@ function calculateExpression(expression) {
     return numbers[0];
 }
 
-
+app.get('/history', (req, res) => {
+    const last20Operations = history.slice(-20);
+    res.json(last20Operations);
+});
 
 app.get('/favicon.ico', (req, res) => res.status(204));
 
@@ -71,25 +77,37 @@ app.get('/*', (req, res) => {
     console.log(path);
     console.log(segments);
     const result = calculateExpression(segments);
-    for (let i=1; i<segments.length-1; i+=2){
-        switch(segments[i]){
+    for (let i = 1; i < segments.length - 1; i += 2) {
+        switch (segments[i]) {
             case 'plus':
-                segments[i]="+";
+                segments[i] = "+";
                 break;
             case 'minus':
-                segments[i]="-";
+                segments[i] = "-";
                 break;
             case 'into':
-                segments[i]="*";
+                segments[i] = "*";
                 break;
             case 'div':
-                segments[i]="/";
+                segments[i] = "/";
                 break;
         }
     }
-    let expr=segments.join("");
-    res.json({ question:expr, answer: result });
+    let expr = segments.join("");
+    let out = { question: expr, answer: result };
+    history.push(out);
+    if (history.length > 20) {
+        history.shift();
+    }
+    fs.writeFileSync('history.json', JSON.stringify(history));
+    res.json({ question: expr, answer: result });
 });
+
+
+if (fs.existsSync('history.json')) {
+    const historyData = fs.readFileSync('history.json', 'utf8');
+    history = JSON.parse(historyData);
+}
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
