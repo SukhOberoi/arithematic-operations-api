@@ -1,5 +1,4 @@
 # arithematic operations api
- Coding Ninjas Club Recruitment Task
 
 To run the server on local host. You must have node installed.
 
